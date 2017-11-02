@@ -1,0 +1,102 @@
+Debian 7字体渲染和infinality安装配置
+原创 2014年01月09日 12:12:50
+
+    标签：
+    debian /
+    infinality /
+    cario
+
+debian 7 里的cairo不用再手动打补丁就能支持次像素平滑，抗锯齿等特性了。手动给cairo打补丁的日子一去不复返了，微笑。
+
+不过默认安装的debian7,font config里没有开启这些特性的配置，还是要手工配置一下，不明白这些为什么不默认打开？
+
+font config的配置放在/etc/fonts/conf.d下，这下面所有的文件都是指向/etc/fonts/conf.avail里的文件symbolic link。
+
+[plain] view plain copy
+
+    # cd /etc/fonts/conf.d  
+    #  ln -s ../conf.avail/10-antialias.conf  .  
+    #  ln -s ../conf.avail/10-hinting.conf .  
+    #  ln -s ../conf.avail/10-hinting-slight.conf  .  
+    #  ln -s ../conf.avail/10-sub-pixel-rgb.conf  .  
+    #  ln -s ../conf.avail/11-lcd-filter-lcddefault.conf .  
+
+
+
+建完这些软链接后，log out,重新登录。你就会发现字体的显示效果好很多了，跟ubuntu是一样的了。
+
+
+这里要隆重地推荐一下infinality， infinality提供了freetype的patches, 目的是提供最好的字体渲染效果。我用了三年多的mac(现在还在用)，mac的字体渲染是最棒的，其次是linux,最差的是windows，很多字体在windows（目前我用的是Windows 7）下的渲染效果只能用惨不忍睹来形容。废话少说，如果你用的的是fedora，你可能直接从infinality官网的源上安装patched freetype包。Debian目前的freetype还没有包含这些补丁，不过已经有一个中国兄弟在github上建了个项目，用来生成for debian的deb包。
+
+先把项目clone出来
+
+[plain] view plain copy
+
+    $ git clone https://github.com/chenxiaolong/Debian-Packages.git  
+    $ cd Debian-Packages/  
+
+
+接下来安装生成deb所需的工具。
+
+[plain] view plain copy
+
+    $ sudo apt-get install build-essential devscripts  
+
+下面检查build这些deb所需的其它依赖。
+
+[plain] view plain copy
+
+    $ cd freetype-infinality/  
+    $ dpkg-checkbuilddeps  
+    $ cd ../fontconfig-infinality/  
+    $ dpkg-checkbuilddeps  
+
+如果所有的依赖都满足，则dpkg-checkbuilddeps没有任何输出，否则会输出系统缺少的包的名称，要安装这些包才能继续。
+
+OK,所有的依赖都安好了，现在开始打包。
+
+[plain] view plain copy
+
+    $ cd ../freetype-infinality/  
+    $ ./build.sh  
+    $ cd ../fontconfig-infinality/  
+    $ ./build.sh  
+
+
+我在打包 freetype-infinality时出了个错，
+
+[plain] view plain copy
+
+    Now running lintian...  
+    N: 3 tags overridden (1 error, 2 warnings)  
+
+不过没什么影响，最后安装还是成功了的。
+
+最后我们要把这两个目录里的.deb文件cp到一个目录下，安装，我试着分开安装，发现无法安装，他们相互依赖了。尴尬
+
+[plain] view plain copy
+
+    $ sudo dpkg -i *.deb  
+
+安装成功后，要设置一下，没办法，这就是linux，很多东西要手动配置。
+
+[plain] view plain copy
+
+    $ cd /etc/fonts/infinality  
+    $ sudo ./infctl.sh setstyle [你喜欢的风格]  
+
+
+可用的风格有：infinality, linux, osx, osx2, win7, win98, winxp
+
+重启一下看看效果吧，：）。
+
+http://www.infinality.net/files/font.html 这是infinality的字体测试页，建议你在安装infinality之前测试一下，截个图，安装后再测试一下，对比前后的显示效果。在安装了infinality后，linux的某些字体的渲染效果已经跟mac差不多了，真是很惊喜。
+
+
+ubuntu 14.04 使用infinality，請參考：
+
+http://askubuntu.com/questions/527349/font-rendering-problem-in-ubuntu
+
+参考文献：
+
+http://www.neowin.net/forum/topic/1153268-installing-infinality-freetypefontconfig-in-debian-7/ 
